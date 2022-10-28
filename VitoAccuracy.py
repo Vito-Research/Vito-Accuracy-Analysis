@@ -4,13 +4,8 @@ import os
 import pandas as pd
 from pandas.core.frame import DataFrame
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import cohen_kappa_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
 
 from vito_algorithms import nightsignal as ns
-
-# import analysis
 
 
 def add_blank_rows(df, no_rows):
@@ -23,10 +18,9 @@ def add_blank_rows(df, no_rows):
 
 
 
-def processAll(folder_path="../sample_data_from_main/", type="Healthv6v2"):
+def processAll(folder_path="./sample_data/", type="Healthv6v2"):
         folder_path = folder_path + type
         filenames = os.listdir(folder_path)
-        csvFiles = []
         for file in filenames:
             if "csv" in file:
 
@@ -46,11 +40,9 @@ def processData(HRFile):
         df.insert(0, "Device", devices, True)
 
         dfSteps = DataFrame()
-        i = 0
         steps = []
         start_time = []
         end_time = []
-        end_date = []
         start_date = []
 
         dfSteps.insert(0, "Steps", steps, True)
@@ -84,6 +76,7 @@ def processData(HRFile):
 
                     alertVals.append(item["val"])
 
-            nsAlertCount = len(alertVals)
+        print(accuracy_score(alertVals, pd.read_csv(HRFile)["risk"]))
 
-            vitoAlertCount = len(df[df["Risk"] > 0.9])
+
+processAll()
