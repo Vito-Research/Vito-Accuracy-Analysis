@@ -9,9 +9,6 @@ from collections import OrderedDict
 from itertools import groupby
 from operator import itemgetter
 
-from matplotlib import pyplot as plt
-
-import streamlit as st
 ### EXAMPLE RUN: python3 nighsignal.py --device=AppleWatch --heartrate=P355472-AppleWatch-hr.csv  --step=P355472-AppleWatch-st.csv
 ### EXAMPLE RUN: python3 nighsignal.py --device=Fitbit --restinghr=P682517-Fitbit-rhr.csv
 
@@ -40,10 +37,10 @@ def round10Base( n ):
 font = {'family' : 'sans-serif',
         'size'   : 4,
 }
-plt.rc('font', **font)
-plt.rc('xtick',labelsize=8)
-plt.rc('ytick',labelsize=10)
-plt.style.use('seaborn-dark-palette')
+# plt.rc('font', **font)
+# plt.rc('xtick',labelsize=8)
+# plt.rc('ytick',labelsize=10)
+# plt.style.use('seaborn-dark-palette')
 
 
 full_cmd_arguments = sys.argv
@@ -343,7 +340,7 @@ def getScore(heartrate_file, step_file):
                 try:
                     AVGHR = int(float(hr))
                 except:
-                    st.error("")
+                    print("Error")
             AVGHR = int(AVGHR/numOfHRs)
             date_hr_avgs_dic[key] = AVGHR
         
@@ -363,7 +360,7 @@ def getScore(heartrate_file, step_file):
                         missed_days_avg_dic[missDate.strftime("%Y-%m-%d")] = round((date_hr_avgs_dic[sorted_keys[i]] + date_hr_avgs_dic[sorted_keys[i-1]])/2 , 1)
                        
                 except:
-                   st.error("OOOof")
+                    print("Error")
         for key in missed_days_avg_dic:
             if key not in date_hr_avgs_dic:
                 date_hr_avgs_dic[key] = missed_days_avg_dic[key]
