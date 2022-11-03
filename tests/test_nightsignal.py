@@ -8,7 +8,7 @@ SAMPLE_HR_DATA_2 = "sample_data/NightSignal/test/P355472-AppleWatch-hr.csv"
 NS_OUTPUT_PATH = "vito_algorithms/tmp/NS-signals.json"
 
 
-class MyTestCase(unittest.TestCase):
+class TestNightSignal(unittest.TestCase):
     def test_getScore(self):
         hr_data_path = pathlib.Path(__file__).parent.parent.joinpath(pathlib.Path(SAMPLE_HR_DATA_1)).resolve()
         ns.getScore(hr_data_path)
