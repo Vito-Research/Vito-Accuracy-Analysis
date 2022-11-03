@@ -1,4 +1,5 @@
 import collections
+import csv
 import datetime
 import getopt
 import json
@@ -494,7 +495,7 @@ def getScore(heartrate_file):
         red_alerted = []
         yellow_alerted = []
         alertsDic = {}
-        counting = 0
+
         for key in red_alert_dates:
             alertsDic[key] = "2"
             red_alerted.append(key)
@@ -505,10 +506,20 @@ def getScore(heartrate_file):
             if (key not in red_alerted) and (key not in yellow_alerted):
                 alertsDic[key] = "0"
         sorted_alerts = collections.OrderedDict(sorted(alertsDic.items()))
-        for key in sorted_alerts:
-            alerts['nightsignal'].append({"date": key, "val": str(sorted_alerts[key])})
-        with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/NS-signals.json")).resolve(), "w+") as out_file:
-            json.dump(alerts, out_file)
+
+        with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/NS-signals.csv")).resolve(), "w",
+                  newline="") as csv_file:
+
+            writer = csv.writer(csv_file)
+            writer.writerow(["Date", "Risk"])
+
+            for date, risk in sorted_alerts.items():
+                writer.writerow([date, risk])
+
+        # for key in sorted_alerts:
+        #     alerts['nightsignal'].append({"date": key, "val": str(sorted_alerts[key])})
+        # with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/NS-signals.json")).resolve(), "w+") as out_file:
+        #     json.dump(alerts, out_file)
 
     #################################  Plot  #################################
     # print("Plotting...")
