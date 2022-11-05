@@ -21,7 +21,7 @@ class TestNightSignal(unittest.TestCase):
 
             reader = csv.reader(csv_file)
             header = next(reader)
-            self.assertEqual(["Date", "Risk"], header)
+            self.assertEqual(["Date", "Average Heart Rate", "Risk"], header)
 
 
 if __name__ == '__main__':
