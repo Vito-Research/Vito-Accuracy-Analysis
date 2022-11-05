@@ -511,10 +511,10 @@ def getScore(heartrate_file):
                   newline="") as csv_file:
 
             writer = csv.writer(csv_file)
-            writer.writerow(["Date", "Risk"])
+            writer.writerow(["Date", "Average Heart Rate", "Risk"])
 
             for date, risk in sorted_alerts.items():
-                writer.writerow([date, risk])
+                writer.writerow([date, date_hr_avgs_dic[date], risk])
 
         # for key in sorted_alerts:
         #     alerts['nightsignal'].append({"date": key, "val": str(sorted_alerts[key])})
