@@ -1,17 +1,16 @@
 import collections
+import csv
 import datetime
 import getopt
 import json
 import os
+import pathlib
 import statistics
 import sys
 from collections import OrderedDict
 from itertools import groupby
 from operator import itemgetter
 
-from matplotlib import pyplot as plt
-
-import streamlit as st
 ### EXAMPLE RUN: python3 nighsignal.py --device=AppleWatch --heartrate=P355472-AppleWatch-hr.csv  --step=P355472-AppleWatch-st.csv
 ### EXAMPLE RUN: python3 nighsignal.py --device=Fitbit --restinghr=P682517-Fitbit-rhr.csv
 
@@ -40,10 +39,10 @@ def round10Base( n ):
 font = {'family' : 'sans-serif',
         'size'   : 4,
 }
-plt.rc('font', **font)
-plt.rc('xtick',labelsize=8)
-plt.rc('ytick',labelsize=10)
-plt.style.use('seaborn-dark-palette')
+# plt.rc('font', **font)
+# plt.rc('xtick',labelsize=8)
+# plt.rc('ytick',labelsize=10)
+# plt.style.use('seaborn-dark-palette')
 
 
 full_cmd_arguments = sys.argv
@@ -61,7 +60,7 @@ heartrate_file = ""
 step_file = ""
 restinghr_file = ""
 device = "h"
-def getScore(heartrate_file, step_file):
+def getScore(heartrate_file):
  
     ###nightsignal configs
     medianConfig = "MedianOfAvgs" # MedianOfAvgs | AbsoluteMedian
@@ -314,22 +313,22 @@ def getScore(heartrate_file, step_file):
         #                 #     if ( datetime.datetime.strftime(hr_time, '%H:%M') not in arrayForThisDay):
         #                 rhrFile.write(device + "," + hr_start_date + "," + hr_start_time + "," + hr_value + "\n")
 
-
         with open(heartrate_file, "r") as hrFile:
             records = hrFile.readlines()
 
         date_hrs_dic = {}
         for record in records:
-            if ("Device" not in record):
+            if not record.isspace() and "device" not in record:
                 record_elements = record.split(",")
-                rec_date = record_elements[1]
-                rec_time = record_elements[2]
-                rec_hr = record_elements[3].strip(' \t\n\r')
-                #if ((rec_time.startswith("00:")) or (rec_time.startswith("01:")) or (rec_time.startswith("02:")) or (rec_time.startswith("03:")) or (rec_time.startswith("04:")) or (rec_time.startswith("05:")) or (rec_time.startswith("06:"))):
-                if (rec_date not in date_hrs_dic):
-                    date_hrs_dic[rec_date] = rec_hr
-                else:
-                    date_hrs_dic[rec_date] = date_hrs_dic[rec_date] + "*" + rec_hr
+                rec_datetime = record_elements[1].split()
+                rec_date = rec_datetime[0]
+                rec_time = rec_datetime[1]
+                rec_hr = record_elements[2].strip(' \t\n\r')
+                if ((rec_time.startswith("00:")) or (rec_time.startswith("01:")) or (rec_time.startswith("02:")) or (rec_time.startswith("03:")) or (rec_time.startswith("04:")) or (rec_time.startswith("05:")) or (rec_time.startswith("06:"))):
+                    if (rec_date not in date_hrs_dic):
+                        date_hrs_dic[rec_date] = rec_hr
+                    else:
+                        date_hrs_dic[rec_date] = date_hrs_dic[rec_date] + "*" + rec_hr
 
         ###Calculate AVGs , Imputation, Healthy baseline Median, and Alerts
         date_hr_avgs_dic = {}
@@ -339,11 +338,10 @@ def getScore(heartrate_file, step_file):
             numOfHRs = str(temp).count("*") + 1
             hrs = temp.split("*")
             for hr in hrs:
-                #st.write(hr)
                 try:
-                    AVGHR = int(float(hr))
+                    AVGHR = AVGHR + int(float(hr))
                 except:
-                    st.error("")
+                    print("Error")
             AVGHR = int(AVGHR/numOfHRs)
             date_hr_avgs_dic[key] = AVGHR
         
@@ -363,7 +361,7 @@ def getScore(heartrate_file, step_file):
                         missed_days_avg_dic[missDate.strftime("%Y-%m-%d")] = round((date_hr_avgs_dic[sorted_keys[i]] + date_hr_avgs_dic[sorted_keys[i-1]])/2 , 1)
                        
                 except:
-                   st.error("OOOof")
+                    print("Error")
         for key in missed_days_avg_dic:
             if key not in date_hr_avgs_dic:
                 date_hr_avgs_dic[key] = missed_days_avg_dic[key]
@@ -429,10 +427,10 @@ def getScore(heartrate_file, step_file):
         for key in date_hr_avgs_dic:
             if (key in date_hr_meds_dic):
                 if (date_hr_avgs_dic[key] >= date_hr_meds_dic[key] + red_threshold):
-                    with open(os.path.join("/tmp/potenital_reds.csv") , "a") as out_file:
+                    with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/potenital_reds.csv")).resolve(), "a") as out_file:
                         out_file.write(key + "\n")
                 if (date_hr_avgs_dic[key] >= date_hr_meds_dic[key] + yellow_threshold):
-                    with open(os.path.join("/tmp/potenital_yellows.csv") , "a") as out_file:
+                    with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/potenital_yellows.csv")).resolve(), "a") as out_file:
                         out_file.write(key + "\n")
 
         ###Red alerts (red states in NightSignal deterministic finite state machine)
@@ -440,7 +438,8 @@ def getScore(heartrate_file, step_file):
         red_alert_dates = []
         dates_array = []
         try:
-            with open(os.path.join("/tmp/potenital_reds.csv"), "r") as my_file:
+
+            with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/potenital_reds.csv")).resolve(), "r") as my_file:
                 for line in my_file:
                     dates_array.append(line.strip(' \t\n\r'))
             track = []
@@ -464,7 +463,7 @@ def getScore(heartrate_file, step_file):
         yellow_alert_dates = []
         dates_array = []
         try:
-            with open(os.path.join("/tmp/potenital_yellows.csv"), "r") as my_file:
+            with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/potenital_yellows.csv")).resolve(), "r") as my_file:
                 for line in my_file:
                     dates_array.append(line.strip(' \t\n\r'))
             track = []
@@ -484,9 +483,8 @@ def getScore(heartrate_file, step_file):
         except:
             print("no yellow file")
 
- 
-        os.system("rm " + os.path.join("/tmp/potenital_reds.csv") )
-        os.system("rm " + os.path.join("/tmp/potenital_yellows.csv") )
+        os.system("rm " + str(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/potenital_reds.csv")).resolve()))
+        os.system("rm " + str(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/potenital_yellows.csv")).resolve()))
 
         ###Generating alerts file
         ### 0 indicates green alert
@@ -497,28 +495,32 @@ def getScore(heartrate_file, step_file):
         red_alerted = []
         yellow_alerted = []
         alertsDic = {}
-        counting = 0
+
         for key in red_alert_dates:
             alertsDic[key] = "2"
             red_alerted.append(key)
-            
-        
-           
         for key in yellow_alert_dates:
-            alertsDic[key] = "0"
+            alertsDic[key] = "1"
             yellow_alerted.append(key)
         for key in date_hr_avgs_dic:
             if (key not in red_alerted) and (key not in yellow_alerted):
                 alertsDic[key] = "0"
         sorted_alerts = collections.OrderedDict(sorted(alertsDic.items()))
-        for key in sorted_alerts:
-            alerts['nightsignal'].append({"date": key, "val": str(sorted_alerts[key])})
-        with open(os.path.join("/tmp/NS-signals.json"), "w+") as out_file:
-            json.dump(alerts, out_file)
-            #st.write(red_alerted)
 
+        with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/NS-signals.csv")).resolve(), "w",
+                  newline="") as csv_file:
 
-        
+            writer = csv.writer(csv_file)
+            writer.writerow(["Date", "Risk"])
+
+            for date, risk in sorted_alerts.items():
+                writer.writerow([date, risk])
+
+        # for key in sorted_alerts:
+        #     alerts['nightsignal'].append({"date": key, "val": str(sorted_alerts[key])})
+        # with open(pathlib.Path(__file__).parent.joinpath(pathlib.Path("tmp/NS-signals.json")).resolve(), "w+") as out_file:
+        #     json.dump(alerts, out_file)
+
     #################################  Plot  #################################
     # print("Plotting...")
 
